@@ -1,0 +1,42 @@
+{
+    "DISPAL": {
+        "procs": [
+            "DISPAL PROC\n\tPUSH DX\n\tPUSH CX\n\tPUSH AX\n\t\tMOV CH,AL\n    \t\tMOV CL,4\n\t\tMOV DL,CH\n\t\tROL DL,CL\n\t\tAND DL,0FH\n\t\tCMP DL,0AH\n\t\tJC PP\n    \t\tADD DL,7\n\t PP:ADD DL,30H\n\t\tMOV AH,2\n\t\tINT 21H\n\n\t\tMOV DL,CH\n\t\tAND DL,0FH\n    \t\tCMP DL,0AH\n\t\tJC GG\n\t\tADD DL,7\n\t GG:ADD DL,30H\n\t\tMOV AH,2\n\t\tINT 21H\n\tPOP AX\n    \tPOP CX\n\tPOP DX\n\tRET\nDISPAL ENDP"
+        ],
+        "info": "Displays Hex Value stored in AL\n[No register modification]"
+    },
+    "INP": {
+        "procs": [
+            "INP PROC\n\t   PUSH BX\n\tPUSH CX\n\t   MOV AH,01H\n\t   INT 21H\t\t ;GET INPUT ASCII\n    \t   CMP AL,3AH\n\t   JC G\n\t   SUB AL,7H\n\t G:SUB AL,30H\t  ;CONVERT ASCII AL TO HEX\n\t   MOV CL,04H\n    \t   ROL AL,CL\n\t   MOV BL,AL\t   ;UPPER NIBBLE IN BL\n\t   MOV AH,01H\n\t   INT 21H\n\t   CMP AL,3AH\n    \t   JC H\n\t   SUB AL,7H\t   ;NEW LOWER NIBBLE HEX IN AL\n\t H:SUB AL,30H\n    \t   OR AL,BL\t\t;COMBINE NIBBLES TO MAKE A BYTE IN AL\n\n\t   POP CX\n\tPOP BX\n\t   RET\nINP ENDP"
+        ],
+        "info": "Takes 1 byte input from user and converts into hex\nOnly 0-F will work\n[AL modification - Result]"
+    },
+    "DISPDEC": {
+        "procs": [
+            "DISPDEC PROC\nPUSH AX\nPUSH BX\nPUSH CX\nPUSH DX\n\tMOV CL,0\n    \tLEA SI,_YY\n\n    BCK:MOV DX,0    \n\tMOV BX,0AH    \n\tDIV BX\n\t\t\t   ;R-DX\t  Q-AX\n\tMOV CH,DL\t \n    \tADD CH,30H    \n\tMOV [SI],CH\t;[SI] <- CH <- DL <- R\n\t\n\tINC SI\n\tINC CL\n    \tCMP AX,0\t   ;AX <- Q    \tJNZ BCK\n\n     PNT:\n\tDEC SI\n\tMOV DL,[SI]\n\tMOV AH,02H\n    \tINT 21H\n\tDEC CL    \n\tJNZ PNT\nPOP DX\nPOP CX\nPOP BX\nPOP AX  \nRET\nDISPDEC ENDP"
+        ],
+        "data": [
+            "_YY DB DUP 5 (0)"
+        ],
+        "info": "Displays Decimal Equivalent of Value in AX\n[No register modification]\n[_YY Array wil be added to data segment]"
+    },
+    "PRINT": {
+        "macs": [
+            "PRINT MACRO MSG\nPUSH AX\nPUSH DX\n\tMOV AH,09H\n\tLEA DX,MSG\t;msg to be displayed\n\tINT 21H\t\nPOP DX\nPOP AX\nENDM"
+        ],
+        "info": "Prints a string from data segment\nTakes Label as argument\n[No register modification]"
+    },
+    "CHSHOW": {
+        "macs": [
+            "CHSHOW MACRO CH\nPUSH AX\nPUSH DX\n\tMOV AH,02H\n\t MOV DL,CH\t;char to be displayed\n\tINT 21H\t\nPOP DX\nPOP AX\nENDM"
+        ],
+        "info": "Prints an immidiate character\nTakes character (eg:'>') as argument\n[No register modification]"
+    },
+    "String Display Interrupt": {
+        "code": [
+            "MOV AH,02H",
+            "INT 21H"
+        ],
+        "info": "Prints an immidiate character\nTakes character (eg:'>') from DL\n[No register modification]"
+    }
+}
