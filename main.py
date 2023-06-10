@@ -1,11 +1,13 @@
 from os import chdir,listdir,mkdir
 from datetime import datetime as dt
 from time import sleep
+from pathlib import PurePath as pp
 import json
 
 #GLOBALS AND CONSTANTS
 BACKUPFILE="masmbackups.json"
 PROGRAM="mpro.asm"
+DIRECTORY=pp("C:/8086") #use / or \\
 LL=50
 L=15
 #Edited Code
@@ -50,39 +52,38 @@ defaults = {
         "macs":['CHSHOW MACRO CH\nPUSH AX\nPUSH DX\n\tMOV AH,02H\n\t MOV DL,CH\t;char to be displayed\n\tINT 21H\t\nPOP DX\nPOP AX\nENDM'],
         "info":"Prints an immidiate character\nTakes character (eg:'>') as argument\n[No register modification]"
     },
-    "String Display":{
+    "String Display Interrupt":{
         "code":['MOV AH,02H','INT 21H'],
         "info":"Prints an immidiate character\nTakes character (eg:'>') from DL\n[No register modification]"
     }
 }
+
 
 # The below code is checking if a directory named "8086" exists in the "C:/" directory. If it does not
 # exist, it creates the directory. Then, it changes the current working directory to "C:/8086".
 # Finally, it checks if a file named "collection.json" exists in the current working directory. If it
 # does, it reads the contents of the file and loads it into the defaults dictionary in the global
 # namespace.
-chdir("C:/")
-if '8086' not in listdir():
-    print(listdir())
-    print("'C:/8086' not found New directory being created!")
-    mkdir("8086")
-chdir("C:/8086")
+chdir(str(DIRECTORY).replace(str(DIRECTORY.name),''))
+if str(DIRECTORY.name) not in listdir():
+    print(f"-<"*LL+'\n\t'+f"'{str(DIRECTORY)}' not found New directory being created!")
+    mkdir(str(DIRECTORY.name))
+    sleep(1)
+chdir(str(DIRECTORY))
 if 'collection.json' in listdir():
     with open('collection.json') as f:
         globals().update({"defaults":json.load(f)})
 
-
-    
 #    This function checks for the existence of a backup file and allows the user to choose whether to
 #    continue editing a previous save or start a new project.
 #    :param x: The parameter x is an optional integer parameter with a default value of 0. It is used to
 #    determine whether to create a new backup file or not. If x is 1, a new backup file will be created
 #    even if one already exists, defaults to 0 (optional)
-    
 def checkbackup(x=0):
     global BACKUPFILE,EDITED,c
     if (BACKUPFILE not in listdir()) or (x==1):
         print(">-"*LL+'\n\t'+f"Backup file not detected, creating new!\n"+"-<"*LL+"\n")
+        sleep(1)
         with open(BACKUPFILE,"w") as newbkup:
             json.dump({},newbkup)
     else:
