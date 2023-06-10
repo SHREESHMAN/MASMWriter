@@ -3,20 +3,14 @@ from datetime import datetime as dt
 from time import sleep
 import json
 
+#GLOBALS AND CONSTANTS
 BACKUPFILE="masmbackups.json"
+PROGRAM="mpro.asm"
 LL=50
-
+L=15
 #Edited Code
 EDITED = False
-c = []
-# Add Data here
-data = []
-#Add custom procs here
-procs = []
-#Add custom macros here
-macs = []
-#Add your code here
-code = []
+c,data,procs,macs,code = [],[],[],[],[]
 
 defaults = {
     "DISPAL":{
@@ -123,22 +117,20 @@ def getMacros(x=1):
     if x==1:s = ".MODEL SMALL\n.STACK 100H\n"
     else: s=''
     if has(macs):
-        s += ';' + '=' * LL + "MACROS" + '=' * LL + '\n'
+        s += ';' + '=' * L + "MACROS" + '=' * L + '\n'
         for i in range(len(macs)):
             s += f"\n{macs[i]}\n"
     return s
-
 def getData(x=1):
-    m='\n\n;'+'='*LL+"CODE"+'='*LL+'\n'
+    m='\n\n;'+'='*L+"CODE"+'='*L+'\n'
     if has(data):
-        s = '\n;'+'='*LL+"VARIABLES"+'='*LL+'\n'+".DATA"
+        s = '\n;'+'='*L+"VARIABLES"+'='*L+'\n'+".DATA"
         for i in range(len(data)):
             s += f"\n\t{data[i]}"
         if x==0:return s + '\n'
         return s + m+ "\n.CODE\nSTART:\n\tMOV AX,@DATA\n\tMOV DS,AX\n"
     else:
         return m+"\n.CODE\nSTART:\n"
-
 def getCode(x=1):
     s = str()
     if has(code):
@@ -146,11 +138,10 @@ def getCode(x=1):
             s += f"\n\t{code[i]}"
     if x==0:return s
     return s + "\n\n\tMOV AH,4CH\n\tINT 21H\n"
-
 def getProcs(x=1):
     s = str()
     if has(procs):
-        s += ('\n;' + '=' * LL + "PROCEDURES" + '=' * LL + '\n')
+        s += ('\n;' + '=' * L + "PROCEDURES" + '=' * L + '\n')
         for i in range(len(procs)):
             s += f"\n{procs[i]}\n"
     if x==0:return s
@@ -170,9 +161,9 @@ def combiner(x=0):
 def finalCode(x=0):
     #0 - backup 1 - +write| 2 - return only
     if x==1:
-        with open("mpro.asm","w") as f:
+        with open(PROGRAM,"w") as f:
             f.write(combiner())
-            print("Check C:/8086/mpro.asm on your DOSBOX!")
+            print(f"Check C:/8086/{PROGRAM} on your DOSBOX!")
     try:
         with open(BACKUPFILE,"r") as ff:    
             a=json.load(ff)
@@ -185,33 +176,6 @@ def finalCode(x=0):
             json.dump(a,ff,indent=4)
     if x==2:return a
 
-#CALL IF YOU WANT TO HAVE THESE PROCS/MACROS
-
-def PRINT():
-    macs.append('PRINT MACRO MSG\nPUSH AX\nPUSH DX\n\tMOV AH,09H\n\tLEA DX,MSG\t;msg to be displayed\n\tINT 21H\t\nPOP DX\nPOP AX\nENDM')
-    
-def DISPDEC():
-    procs.append("""DISPDEC PROC\nPUSH AX\nPUSH BX\nPUSH CX\nPUSH DX\n\tMOV CL,0
-    \tLEA SI,_YY\n\n    BCK:MOV DX,0    \n\tMOV BX,0AH    \n\tDIV BX\n\t\t\t   ;R-DX\t  Q-AX\n\tMOV CH,DL\t 
-    \tADD CH,30H    \n\tMOV [SI],CH\t;[SI] <- CH <- DL <- R\n\t\n\tINC SI\n\tINC CL
-    \tCMP AX,0\t   ;AX <- Q    \tJNZ BCK\n\n     PNT:\n\tDEC SI\n\tMOV DL,[SI]\n\tMOV AH,02H
-    \tINT 21H\n\tDEC CL    \n\tJNZ PNT\nPOP DX\nPOP CX\nPOP BX\nPOP AX  \nRET\nDISPDEC ENDP""")
-    data.append("_YY DB DUP 5 (0)")
-
-def INP():
-    procs.append('''INP PROC\n\t   PUSH BX\n\tPUSH CX\n\t   MOV AH,01H\n\t   INT 21H\t\t ;GET INPUT ASCII
-    \t   CMP AL,3AH\n\t   JC G\n\t   SUB AL,7H\n\t G:SUB AL,30H\t  ;CONVERT ASCII AL TO HEX\n\t   MOV CL,04H
-    \t   ROL AL,CL\n\t   MOV BL,AL\t   ;UPPER NIBBLE IN BL\n\t   MOV AH,01H\n\t   INT 21H\n\t   CMP AL,3AH
-    \t   JC H\n\t   SUB AL,7H\t   ;NEW LOWER NIBBLE HEX IN AL\n\t H:SUB AL,30H
-    \t   OR AL,BL\t\t;COMBINE NIBBLES TO MAKE A BYTE IN AL\n\n\t   POP CX\n\tPOP BX\n\t   RET\nINP ENDP''')
-
-def DISPAL():
-    procs.append('''DISPAL PROC\n\tPUSH DX\n\tPUSH CX\n\tPUSH AX\n\t\tMOV CH,AL
-    \t\tMOV CL,4\n\t\tMOV DL,CH\n\t\tROL DL,CL\n\t\tAND DL,0FH\n\t\tCMP DL,0AH\n\t\tJC PP
-    \t\tADD DL,7\n\t PP:ADD DL,30H\n\t\tMOV AH,2\n\t\tINT 21H\n\n\t\tMOV DL,CH\n\t\tAND DL,0FH
-    \t\tCMP DL,0AH\n\t\tJC GG\n\t\tADD DL,7\n\t GG:ADD DL,30H\n\t\tMOV AH,2\n\t\tINT 21H\n\tPOP AX
-    \tPOP CX\n\tPOP DX\n\tRET\nDISPAL ENDP''')
-
 def get(key):
     collection=[]
     for name in defaults:
@@ -220,14 +184,40 @@ def get(key):
             collection.append(obj)
     return collection
 
-def linsel(x,line,lis,z="edit"):
+def collect(obj):
+    global procs,macs,data,code
+    if "procs" in obj:
+        for i in obj["procs"]:
+            if i in procs:
+                print("Warning: Procedure fully or partially already in program!")
+                continue
+            procs.append(i)
+    if "data" in obj:
+        for i in obj["data"]:
+            if i in data:
+                print("Warning: Data fully or partially already in program!")
+                continue
+            data.append(i)
+    if "macs" in obj:
+        for i in obj["macs"]:
+            if i in macs:
+                print("Warning: Macro fully or partially already in program!")
+                continue
+            macs.append(i)
+    if "code" in obj:
+        for i in obj["code"]:
+            if i in code:
+                print("Warning: Interrupt fully or partially already in program!")
+                continue
+            code.append(i)
 
+def linsel(x,line,lis,z="edit"):
     if x!=0 and x!=1:
         try:
-            x = input(f"Enter {line} number to {z}: ")
-            while int(x)-1 not in range(len(lis)):
+            x = input(f"Enter {line} number to {z} (0-Back): ")
+            while int(x) not in range(len(lis)-1):
                 print("Invalid input enter again!")
-                x = input(f"Enter {line} number to {z}: ")
+                x = input(f"Enter {line} number to {z} (0-Back): ")
             return int(x)-1#actual index
         except:linsel(x,line,lis);return
 
@@ -241,7 +231,7 @@ def linsel(x,line,lis,z="edit"):
         for i in range(temp,temp2):
             if i==line:print(f"  | >",end="")
             print(f"{i+1}\t|{lis[i]}")
-        replacement = input("=="*LL+"\nEnter Replacement Line: ")
+        replacement = input("-"*LL+"\nEnter Replacement Line: ")
         if "\t" in lis[line] or "    " in lis[line]:
             lis[line] = "    "+replacement
         else: lis[line] = replacement
@@ -253,13 +243,14 @@ def linsel(x,line,lis,z="edit"):
             print(f"{i+1}\t|{lis[i]}")
     
 def ask(x=1):
-    if x==1:print("--"*LL+"""\n0 - Apply Edits/Change Specific Lines\n\t|1| !Whole Program (Final)!\t|2| Macs\t|3| Code\t|4| Procs\t|5| Data\t
-1 - View\n\t|11| - Whole Program\n\t|12| - Macros\n\t|13| - Code\n\t|14| - Procedures\n\t|15| - Data and Variables
-2 - Add Macro\n\t|21| - Default Macros\n\t|22| - Custom Macro (with All PUSHS/POPS)\n\t|23| - Custom Blank Macro 
-3 - Add Code\n\t|31| - Default Interrupts\n\t|32| - Add a line of code\n\t|33| - Add a Block of Code
-4 - Add Procedure\n\t|41| - Default Procedures\n\t|42| - Custom Procedures (with All PUSHS/POPS)\n\t|43| - Custom Blank Procedure 
-5 - Add Data\n\t|51| - String\n\t|52| - Byte(s)\n\t|53| - Word\n\t|54| - Dup Array\n\t|55| - 0 Array
-6 - Save\n"""+"--"*40)
+    if x==1:print("-"*LL+"Options"+LL*"-"+"""\n0 - Apply Edits/Change Specific Lines\n\t|1| !Whole Program (Final)!\t|2| Macs\t|3| Code\t|4| Procs\t|5| Data\t
+1 - View\n\t|11| - Whole Program\t\t\t|12| - Macros\n\t|13| - Code\t\t\t\t|14| - Procedures\n\t|15| - Data and Variables
+2 - Add Macro\n\t|21| - Default Macros\t\t\t|22| - Custom Macro (with All PUSHS/POPS)\n\t|23| - Custom Blank Macro 
+3 - Add Code\n\t|31| - Default Interrupts\t\t|32| - Add a line of code\n\t|33| - Add a Block of Code
+4 - Add Procedure\n\t|41| - Default Procedures\t\t|42| - Custom Procedures (with All PUSHS/POPS)\n\t|43| - Custom Blank Procedure 
+5 - Add Data\n\t|51| - String\t\t\t\t|52| - Byte(s)\n\t|53| - Word\t\t\t\t|54| - Dup Array\n\t|55| - 0 Array
+6 - Settings\n\t|61| - Change Filename\n\t(Coming Soon)\n\tx62x - Store new default macs/procs/int as options\n\tx63x - Load another save\t\tx64x - Merge()
+7 - Save asm and Exit\n"""+"--"*40)
     choice = (input("\n|>=[ "))
     try:
         temp=int(choice)
@@ -273,52 +264,43 @@ def ask(x=1):
     elif temp>=31 and temp<=34:M3(int(choice[1]))
     elif temp>=41 and temp<=44:M4(int(choice[1]))
     elif temp>=51 and temp<=56:M5(int(choice[1]))
-    elif temp == 6:
+    elif temp>=61 and temp<=64:M6(int(choice[1]))
+    elif temp == 7:
         print("Creating backup",end="")
         for i in range(6):
             sleep(0.5);print(".",end="")
         finalCode(1)
         print('\n'+LL*">"+"Writing to your DOSBOX directory!"+LL*"<"+"\n"+5*"\t"+"Ending Program")
-        exit()
     elif temp == 0:
         print("Creating backup",end="")
         for i in range(6):
             sleep(0.5);print(".",end="")
         finalCode(0)
         print('\n'+LL*">"+"Backup Saved!"+LL*"<"+"\n"+5*"\t"+"Ending Program")
-        exit()
     else:
         print("Invalid! choice")
         ask(0)
         return
 
 def M0(x):
-    if x==1 or x==11:
+    if x==1:
         global c
         global EDITED
-        print(f"{'-'*LL}\nIf you make final changes here the other features of the program may not be used again without manually overwriting these changes!\n{LL*'-'}")
+        print(f"{'--'*LL}\nIf you make final changes here the other features of the program may not be used again without manually overwriting these changes!\n{LL*'--'}")
 
         if not EDITED:c = combiner().splitlines()
         if x==1:
             for i in range(len(c)):
                 print(f"{i+1}\t|{c[i]}")
-        line = input("="*LL+"\nEnter line number to edit (0-Back): ")
-        try:
-            temp = int(line)
-            if temp>len(c) or temp<0:
-                assert 420==69
-            if temp==0:
-                ask()
-                return
-        except:
-            print("Invalid!")
-            M0(11)
-            return
-        EDITED = True
-        c=linsel(0,line,c)
-        linsel(1,line,c)
-        finalCode(0)
-        cont(0,1)
+        line=linsel(2,'line',c)
+        if line!=-1:
+            line+=1
+            EDITED = True
+            c=linsel(0,line,c)
+            linsel(1,line,c)
+            finalCode(0)
+            cont(0,1)
+        else:ask()
     else:       
         if x==2 or x==22:
             global macs
@@ -413,32 +395,9 @@ def M2(x):
             for j in obj['macs']:
                 print(f"\n{j}\n")
         line = linsel(2,"Macro",coll,"add")
-        global procs,macs,data,code
-        if "procs" in coll[line]:
-            for i in coll[line]["procs"]:
-                if i in procs:
-                    print("Warning: Procedure fully or partially already in program!")
-                    continue
-                procs.append(i)
-        if "data" in coll[line]:
-            for i in coll[line]["data"]:
-                if i in data:
-                    print("Warning: Data fully or partially already in program!")
-                    continue
-                data.append(i)
-        if "macs" in coll[line]:
-            for i in coll[line]["macs"]:
-                if i in macs:
-                    print("Warning: Macro fully or partially already in program!")
-                    continue
-                macs.append(i)
-        if "code" in coll[line]:
-            for i in coll[line]["code"]:
-                if i in macs:
-                    print("Warning: Interrupt fully or partially already in program!")
-                    continue
-                code.append(i)
-        print("\nAdding Macro Complete!\n")
+        if line!=-1:
+            collect(coll[line])
+            print("\nAdding Macro Complete!\n")
     elif x==2 or x==3:
         n = input("\nEnter your macro name: ")
         a = input("Enter argument name or leave blank if none: ")
@@ -472,32 +431,10 @@ def M3(x):
             for j in obj['code']:
                 print(f"\t{j}")
         line = linsel(2,"Interrupt",coll,"add")
-        global procs,macs,data
-        if "procs" in coll[line]:
-            for i in coll[line]["procs"]:
-                if i in procs:
-                    print("Warning: Procedure fully or partially already in program!")
-                    continue
-                procs.append(i)
-        if "data" in coll[line]:
-            for i in coll[line]["data"]:
-                if i in data:
-                    print("Warning: Data fully or partially already in program!")
-                    continue
-                data.append(i)
-        if "macs" in coll[line]:
-            for i in coll[line]["macs"]:
-                if i in macs:
-                    print("Warning: Macro fully or partially already in program!")
-                    continue
-                macs.append(i)
-        if "code" in coll[line]:
-            for i in coll[line]["code"]:
-                if i in code:
-                    print("Warning: Interrupt fully or partially already in program!")
-                    continue
-                code.append(i)
-        print("\nAdding Interrupt Complete!\n") 
+        if line!=-1:
+            collect(coll[line])
+            
+            print("\nAdding Interrupt Complete!\n") 
     elif x==2:
         for i in range(len(code)):
             print(f"{i+1}\t|{code[i]}")
@@ -533,25 +470,8 @@ def M4(x):
             for j in obj['procs']:
                 print(f"\n{j}\n")
         line = linsel(2,"Procedure",coll,"add")
-        global procs,macs,data,code
-        if "procs" in coll[line]:
-            for i in coll[line]["procs"]:
-                if i in procs:
-                    print("Warning: Procedure fully or partially already in program!")
-                    continue
-                procs.append(i)
-        if "data" in coll[line]:
-            for i in coll[line]["data"]:
-                if i in data:
-                    print("Warning: Data fully or partially already in program!")
-                    continue
-                data.append(i)
-        if "macs" in coll[line]:
-            for i in coll[line]["macs"]:
-                if i in macs:
-                    print("Warning: Macro fully or partially already in program!")
-                    continue
-                macs.append(i)
+        if line!=-1:
+            collect(coll[line])
         print("\nAdding Procedure Complete!\n")         
         
     elif x==2 or x==3:
@@ -628,6 +548,19 @@ def M5(x):
         print(f"\nData added: {s}")
     cont(5,x)
     return
+def M6(x):
+    if x==1:
+        name=input("Enter the new file name to store your program in\nLeave blank to revert to defaukt\n\n\t| ")+'.asm'
+        if name!='':
+            global PROGRAM
+            PROGRAM = name[:name.find('.asm')+4]        
+        print(f"{PROGRAM} will be used this time")
+    elif x==2:
+        print("\n\tComing soon - Right now you can create/edit collection.json to add you own code!\nformat:{_name_}:{'info':'_','procs':[] or 'macs':[] or 'code':[] + can also have 'data':[]}\nor check default dict in this py file")
+    else:
+        print("Coming soon!")
+    sleep(2)
+    ask()
 
 def cont(menu,retarg):
     if menu==0:
