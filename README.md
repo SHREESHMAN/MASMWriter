@@ -11,10 +11,17 @@ Python program to Create, View, Edit and Store MASM programs for 8086 by providi
 
 # Dictionary Format to add/modify collection.json
 ![image](https://github.com/SHREESHMAN/MASMWriter/assets/35427748/7d65517d-c6b7-4de7-a41b-0b82d969956c)
-[Description: DISPDEC dict that adds just one DISPDEC procedure (as 'procs' list element 1) and an array to data segment (as 'data' list element 1) used by it and an 'info' string to define its purpose => compulsory.
-PRINT dict that adds a single PRINT macro (as 'macs' list element 1) + info. 
-The last dixt is  an interrupt consisting of 2 lines where each line is a seperate element of the 'code' array.]
+[Description: DISPDEC dict that adds just one DISPDEC procedure (as 'procs' list element 1) and an array to data segment (as 'data' list element 1) used by it and an 'info' string to define its purpose => compulsory.]
+[PRINT dict that adds a single PRINT macro (as 'macs' list element 1) + info.] 
+[The last dict is  an interrupt consisting of 2 lines where each line is a seperate element of the 'code' array.]
 > The dict name isn't displayed and is for your refernce, the info string is the descriptions that is needed by every inner dict and the list names are checked to see what dependencies need to be added for the specific piece of code to work. 
+
+# Specific modifications
+![image](https://github.com/SHREESHMAN/MASMWriter/assets/35427748/53485b45-81bb-4755-af0a-d51a97767cfb)
+[Editable backup/main file name and directory for both - if the final folder is not detected - it will be created]
+[LL - Long Line length depending on how many "-" characters will be displayed to seperate sections of the program]
+[L - Same constant for a smaller line]
+
 # Coming soon:
   - Import blocks of code/procedures/macros/data from another .asm project
 
