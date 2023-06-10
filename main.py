@@ -1,17 +1,25 @@
 from os import chdir,listdir,mkdir
 from datetime import datetime as dt
 from time import sleep
+from pathlib import PurePath as pp
 import json
 
 #GLOBALS AND CONSTANTS
 BACKUPFILE="masmbackups.json"
 PROGRAM="mpro.asm"
+DIRECTORY=pp("C:/8086") #use / or \\
 LL=50
 L=15
 #Edited Code
 EDITED = False
 c,data,procs,macs,code = [],[],[],[],[]
 
+# The below code is defining a dictionary named "defaults" which contains information about various
+# procedures and macros in assembly language. Each key in the dictionary represents a procedure or
+# macro and contains information about its implementation, purpose, and any register modifications it
+# makes. Some of the procedures/macros defined include displaying a hex value, taking user input and
+# converting it to hex, displaying decimal equivalent of a value, printing a string, and displaying an
+# immediate character.
 defaults = {
     "DISPAL":{
         "procs":["""DISPAL PROC\n\tPUSH DX\n\tPUSH CX\n\tPUSH AX\n\t\tMOV CH,AL
@@ -44,26 +52,38 @@ defaults = {
         "macs":['CHSHOW MACRO CH\nPUSH AX\nPUSH DX\n\tMOV AH,02H\n\t MOV DL,CH\t;char to be displayed\n\tINT 21H\t\nPOP DX\nPOP AX\nENDM'],
         "info":"Prints an immidiate character\nTakes character (eg:'>') as argument\n[No register modification]"
     },
-    "String Display":{
+    "String Display Interrupt":{
         "code":['MOV AH,02H','INT 21H'],
         "info":"Prints an immidiate character\nTakes character (eg:'>') from DL\n[No register modification]"
     }
 }
 
-chdir("C:/")
-if '8086' not in listdir():
-    print(listdir())
-    print("'C:/8086' not found New directory being created!")
-    mkdir("8086")
-chdir("C:/8086")
+
+# The below code is checking if a directory named "8086" exists in the "C:/" directory. If it does not
+# exist, it creates the directory. Then, it changes the current working directory to "C:/8086".
+# Finally, it checks if a file named "collection.json" exists in the current working directory. If it
+# does, it reads the contents of the file and loads it into the defaults dictionary in the global
+# namespace.
+chdir(str(DIRECTORY).replace(str(DIRECTORY.name),''))
+if str(DIRECTORY.name) not in listdir():
+    print(f"-<"*LL+'\n\t'+f"'{str(DIRECTORY)}' not found New directory being created!")
+    mkdir(str(DIRECTORY.name))
+    sleep(1)
+chdir(str(DIRECTORY))
 if 'collection.json' in listdir():
     with open('collection.json') as f:
         globals().update({"defaults":json.load(f)})
 
+#    This function checks for the existence of a backup file and allows the user to choose whether to
+#    continue editing a previous save or start a new project.
+#    :param x: The parameter x is an optional integer parameter with a default value of 0. It is used to
+#    determine whether to create a new backup file or not. If x is 1, a new backup file will be created
+#    even if one already exists, defaults to 0 (optional)
 def checkbackup(x=0):
     global BACKUPFILE,EDITED,c
     if (BACKUPFILE not in listdir()) or (x==1):
         print(">-"*LL+'\n\t'+f"Backup file not detected, creating new!\n"+"-<"*LL+"\n")
+        sleep(1)
         with open(BACKUPFILE,"w") as newbkup:
             json.dump({},newbkup)
     else:
@@ -114,6 +134,18 @@ def checkbackup(x=0):
 def has(dmcp):return len(dmcp)>0
 
 def getMacros(x=1):
+    """
+    The function returns a string containing assembly code macros if they exist.
+    
+    :param x: The parameter x is an optional integer parameter with a default value of 1. It is used to
+    determine whether to include additional assembly code in the returned string. If x is equal to 1,
+    the additional code will be included. If x is not equal to 1, the additional code will, defaults to
+    1 (optional)
+    :return: The function `getMacros` returns a string `s` that contains assembly code for defining
+    macros. The string includes the `.MODEL SMALL` and `.STACK 100H` directives if the optional argument
+    `x` is not provided or is equal to 1. If the list `macs` contains any macros, they are included in
+    the string with a header that says "MACROS".
+    """
     if x==1:s = ".MODEL SMALL\n.STACK 100H\n"
     else: s=''
     if has(macs):
@@ -122,6 +154,20 @@ def getMacros(x=1):
             s += f"\n{macs[i]}\n"
     return s
 def getData(x=1):
+    """
+    This is a Python function that returns a string containing code and variables, with an optional
+    parameter to exclude the code section.
+    
+    :param x: An optional parameter with a default value of 1. It is used to determine whether to
+    include the variables section in the output or not. If x is 0, only the variables section will be
+    returned. If x is 1 or any other value, both the variables and code sections will be, defaults to 1
+    (optional)
+    :return: The function `getData()` is returning a string that contains assembly code. The code
+    includes a section for declaring variables (if there are any), and a section for the main code. The
+    main code starts with the label "START" and includes instructions for setting up the data segment
+    and the data register. The code may also include additional instructions depending on the specific
+    implementation.
+    """
     m='\n\n;'+'='*L+"CODE"+'='*L+'\n'
     if has(data):
         s = '\n;'+'='*L+"VARIABLES"+'='*L+'\n'+".DATA"
@@ -132,6 +178,16 @@ def getData(x=1):
     else:
         return m+"\n.CODE\nSTART:\n"
 def getCode(x=1):
+    """
+    This is a Python function that returns a string containing assembly code, with an optional parameter
+    to include an exit code.
+    
+    :param x: The parameter x is an optional integer parameter with a default value of 1, defaults to 1
+    (optional)
+    :return: The function getCode is returning a string that contains assembly code. If the parameter x
+    is equal to 0, it returns only the code without the "MOV AH,4CH\n\tINT 21H\n" instruction. If x is
+    not equal to 0, it returns the code with the "MOV AH,4CH\n\tINT 21H\n" instruction at the end.
+    """
     s = str()
     if has(code):
         for i in range(len(code)):
@@ -139,6 +195,16 @@ def getCode(x=1):
     if x==0:return s
     return s + "\n\n\tMOV AH,4CH\n\tINT 21H\n"
 def getProcs(x=1):
+    """
+    This function returns a string containing a list of procedures and the string "END START".
+    
+    :param x: The parameter x is an optional integer parameter with a default value of 1. It is used to
+    control the output of the function. If x is set to 0, the function will only return the procedures
+    section of the output without the "END START" line. If x is set to any, defaults to 1 (optional)
+    :return: a string that contains information about the procedures in the program, as well as the
+    string "END START". The "x" parameter is used to control whether or not the "END START" string is
+    included in the returned value. If x is 0, only the information about the procedures is returned.
+    """
     s = str()
     if has(procs):
         s += ('\n;' + '=' * L + "PROCEDURES" + '=' * L + '\n')
@@ -148,6 +214,18 @@ def getProcs(x=1):
     return s + "\nEND START"
 
 def combiner(x=0):
+    """
+    This function returns a dictionary or string depending on the input parameter and whether the
+    function has been edited.
+    
+    :param x: The parameter x is used to determine the behavior of the function. If x is equal to 1, the
+    function will return a dictionary containing information about the current state of the function. If
+    x is not equal to 1, the function will return a string containing the combined macros, data, code,
+    defaults to 0 (optional)
+    :return: The function `combiner` returns different values based on the input parameter `x` and the
+    value of a global variable `EDITED`. If `x` is 1 and `EDITED` is False, it returns a dictionary
+    containing the values of `macs`, `data`, `code`, and `procs`. If `x` is 1 and `EDITED` is True
+    """
     #NEED TO DISPLAY WHEN NOT EDITED
     if EDITED and x==1:#if edited no matter what return cstring
         return {"EDITED":True,"c":'\n'.join(c)}
@@ -159,6 +237,17 @@ def combiner(x=0):
         return(getMacros()+getData()+getCode()+getProcs())
 
 def finalCode(x=0):
+    """
+    This function creates a backup file and writes the combined code to a specified program file, and
+    can also return the backup data if requested.
+    
+    :param x: The parameter x is an optional integer parameter that determines the behavior of the
+    function. If x is not provided or set to 0, the function will create a backup of the current program
+    code and update the backup file with the current code. If x is set to 1, the function will write,
+    defaults to 0 (optional)
+    :return: The function `finalCode()` returns a dictionary containing the backup data if the `x`
+    parameter is 0 or 1, and returns nothing if the `x` parameter is 2.
+    """
     #0 - backup 1 - +write| 2 - return only
     if x==1:
         with open(PROGRAM,"w") as f:
@@ -177,6 +266,16 @@ def finalCode(x=0):
     if x==2:return a
 
 def get(key):
+    """
+    The function "get" returns a collection of objects from a dictionary "defaults" that contain a given
+    key.
+    
+    :param key: The parameter "key" is a variable that represents the key that we want to search for in
+    the "defaults" dictionary. The function iterates through the values of the "defaults" dictionary and
+    checks if the key exists in each value. If the key exists in a value, that value is added
+    :return: The function `get` returns a list of all the objects in the `defaults` dictionary that
+    contain the specified `key`.
+    """
     collection=[]
     for name in defaults:
         obj = defaults[name]
@@ -185,6 +284,14 @@ def get(key):
     return collection
 
 def collect(obj):
+    """
+    The function collects procedures, data, macros, and interrupts from an object and checks if they are
+    already in the program, printing a warning if they are.
+    
+    :param obj: a dictionary object containing the following keys: "procs", "data", "macs", and "code".
+    Each key corresponds to a list of strings representing procedures, data, macros, and interrupt code
+    respectively
+    """
     global procs,macs,data,code
     if "procs" in obj:
         for i in obj["procs"]:
@@ -212,6 +319,23 @@ def collect(obj):
             code.append(i)
 
 def linsel(x,line,lis,z="edit"):
+    """
+    The function `linsel` allows the user to select and edit a line in a list, displaying a range of
+    lines before and after the selected line.
+    
+    :param x: The value of x is used to determine whether the function should prompt the user for input
+    or not. If x is not 0 or 1, the function will prompt the user for input. If x is 0, the function
+    will prompt the user to enter a replacement line for the selected line
+    :param line: The line number that the user wants to edit or view in the list
+    :param lis: The list of lines that the function is operating on
+    :param z: The parameter "z" is a string that specifies the action being performed in the function.
+    It is used in the input prompt to provide context to the user. The default value of "z" is "edit",
+    defaults to edit (optional)
+    :return: different values depending on the input parameters and user input. If `x` is not equal to 0
+    or 1, the function prompts the user to enter a number and returns the integer value of that number
+    minus 1. If an exception occurs during the input process, the function calls itself recursively. If
+    `x` is equal to 0, the function prompts the user to
+    """
     if x!=0 and x!=1:
         try:
             x = input(f"Enter {line} number to {z} (0-Back): ")
@@ -241,7 +365,14 @@ def linsel(x,line,lis,z="edit"):
         for i in range(temp,temp2):
             if i==line:print(f"  | >",end="")
             print(f"{i+1}\t|{lis[i]}")
-    
+
+#    ask function displays a menu of options and prompts the user to select an option,
+#    then calls a corresponding function based on the user's input.
+#    :param x: The optional parameter x has a default value of 1 and is used to determine which options
+#    to display to the user. If x is 1, the full list of options is displayed. If x is 0, the program
+#    creates a backup of the code and exits, defaults to 1 (optional)
+#    :return: Nothing is being returned. The function is simply printing out options and taking user
+#    input to execute different actions based on the input.  
 def ask(x=1):
     if x==1:print("-"*LL+"Options"+LL*"-"+"""\n0 - Apply Edits/Change Specific Lines\n\t|1| !Whole Program (Final)!\t|2| Macs\t|3| Code\t|4| Procs\t|5| Data\t
 1 - View\n\t|11| - Whole Program\t\t\t|12| - Macros\n\t|13| - Code\t\t\t\t|14| - Procedures\n\t|15| - Data and Variables
@@ -283,6 +414,14 @@ def ask(x=1):
         return
 
 def M0(x):
+    """
+    This is a Python function that allows the user to edit different sections of code, including macros,
+    procedures, and data.
+    
+    :param x: The input parameter to the function M0, which determines the specific action to be
+    performed within the function. It could be either 1, 2, 22, 3, 33, 4, 44, 5, or 55
+    :return: nothing (i.e., None).
+    """
     if x==1:
         global c
         global EDITED
@@ -372,6 +511,15 @@ def M0(x):
         elif x==5 or x==55:cont(0,5)    
     return
 def M1(x):
+    """
+    The function M1 takes an input x and performs a specific Viewing action based on its value, then calls the
+    function cont with arguments 1 and x.
+    
+    :param x: x is a parameter that is used to determine which action to perform in the M1 function.
+    Depending on the value of x, the function will call different helper functions to retrieve and print
+    information related to macros, code, procedures, and data. The cont(1,x) function is also called at
+    :return: nothing (i.e., None).
+    """
     if x==1:
         print(combiner())
     elif x==2:
@@ -385,6 +533,14 @@ def M1(x):
     cont(1,x)
     return
 def M2(x):
+    """
+    The function M2 allows the user to view, add, and create macros in Python.
+    
+    :param x: The parameter x is used to determine which part of the function to execute. If x is equal
+    to 1, the function will display a list of existing macros and allow the user to add a new one. If x
+    is equal to 2 or 3, the function will prompt the user to
+    :return: nothing (i.e., None).
+    """
     if x==1:
         i=1
         coll=get("macs")
@@ -420,6 +576,14 @@ def M2(x):
     cont(2,x)
     return
 def M3(x):
+    """
+    The function M3 allows for the insertion of code into a global variable 'code' and the addition of
+    interrupts to a collection.
+    
+    :param x: The parameter x is an integer that determines which action to perform in the M3 function.
+    It can be 1, 2, or 3, and each value corresponds to a different action
+    :return: nothing (i.e., None).
+    """
     global code
     if x==1:
         i=1
@@ -460,6 +624,14 @@ def M3(x):
     cont(3,x)
     return
 def M4(x):
+    """
+    The function M4 allows the user to add or view procedures and input code line by line.
+    
+    :param x: The parameter x is an integer that determines which part of the code to execute. It is
+    used as a control variable in an if-else statement to determine whether to add a new procedure or
+    edit an existing one
+    :return: nothing (i.e., None).
+    """
     if x==1:
         i=1
         coll=get("procs")
@@ -494,6 +666,14 @@ def M4(x):
     cont(4,x)
     return
 def M5(x):
+    """
+    This is a Python function that allows the user to add different types of data (strings, bytes,
+    words, and arrays) with labels to a global list called "data".
+    
+    :param x: The parameter x is an integer that determines which option the user has selected in the
+    menu
+    :return: nothing (i.e., None).
+    """
     global data
     if x==1:
         n=input("Enter Label for your string (Eg: MSG):")
@@ -549,6 +729,11 @@ def M5(x):
     cont(5,x)
     return
 def M6(x):
+    """
+    The function M6 provides options to create a new file or edit a collection of code.
+    
+    :param x: The parameter x is an integer that determines which action to perform in the function M6
+    """
     if x==1:
         name=input("Enter the new file name to store your program in\nLeave blank to revert to defaukt\n\n\t| ")+'.asm'
         if name!='':
@@ -563,6 +748,17 @@ def M6(x):
     ask()
 
 def cont(menu,retarg):
+    """
+    This function prompts the user to continue with a specific action based on the menu option selected.
+    
+    :param menu: an integer representing the current menu or action being performed
+    :param retarg: It is a variable that stores the current state or data of the program and is passed
+    as an argument to the different functions called within the "cont" function. This allows the program
+    to continue from where it left off after the user decides to continue editing, viewing, or adding
+    macros, code, procedures
+    :return: Nothing is being returned explicitly in this code. However, the function may indirectly
+    return a value if it calls another function that returns a value.
+    """
     if menu==0:
         msg = (input("Continue Editing?(Y/N): ")).upper()
         if ((msg).strip()[0]) == "Y":
@@ -625,5 +821,6 @@ def cont(menu,retarg):
             return
 
 #FINAL CODE GENERATOR
+# The below code is calling two functions: `checkbackup()` and `ask()`.
 checkbackup()
 ask()

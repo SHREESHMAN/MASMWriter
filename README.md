@@ -11,6 +11,7 @@ Python program to Create, View, Edit and Store MASM programs for 8086 by providi
 
 # Dictionary Format to add/modify collection.json
 ![image](https://github.com/SHREESHMAN/MASMWriter/assets/35427748/7d65517d-c6b7-4de7-a41b-0b82d969956c)
+
 [Description: DISPDEC dict that adds just one DISPDEC procedure (as 'procs' list element 1) and an array to data segment (as 'data' list element 1) used by it and an 'info' string to define its purpose => compulsory.]
 [PRINT dict that adds a single PRINT macro (as 'macs' list element 1) + info.] 
 [The last dict is  an interrupt consisting of 2 lines where each line is a seperate element of the 'code' array.]
